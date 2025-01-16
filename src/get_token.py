@@ -3,8 +3,8 @@ import webbrowser
 from urllib.parse import urlencode, urlparse, parse_qs
 
 # Spotify API credentials
-CLIENT_ID = 'CLIENT_ID'
-CLIENT_SECRET = 'CLIENT_SECRET'
+CLIENT_ID = '3af8a47de6a8475aae6ab7820813315a'
+CLIENT_SECRET = '80aade802d0e466089a843524d184edf'
 REDIRECT_URI = 'http://localhost:8888/callback'
 SCOPE = 'user-read-playback-state user-modify-playback-state user-read-currently-playing user-read-private user-read-email'
 
@@ -50,6 +50,7 @@ def exchange_code_for_tokens(code):
 
     access_token = tokens['access_token']
     refresh_token = tokens['refresh_token']
+    print()
     print("Access Token:", access_token, '\n')
     print("Refresh Token:", refresh_token, '\n')
     return access_token, refresh_token

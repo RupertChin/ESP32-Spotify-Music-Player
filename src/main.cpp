@@ -7,8 +7,8 @@
 #include "esp_wpa2.h"
 
 #define LED_BUILTIN 2
-#define INPUT_CLK 32
-#define INPUT_DT 33
+#define INPUT_A 32
+#define INPUT_B 33
 
 
 // function defs
@@ -22,8 +22,8 @@ const char *wifi_username = "WIFI_USERNAME"; // only needed if connecting to WPA
 const char *wifi_password = "WIFI_PASSWORD";
 
 // Spotify API credentials, change as necessary
-const char *clientID = "7b624b0ac1c04f1497f52c0f332c240a";
-const char *clientSecret = "214c9af7e36140ada003e766b4415854";
+const char *clientID = "CLIENT_ID";
+const char *clientSecret = "CLIENT_SECRET";
 const char *redirectURI = "http://localhost:8888/callback";
 String accessToken = "ACCESS_TOKEN";
 String refreshToken = "REFRESH_TOKEN";
@@ -44,9 +44,10 @@ void setup() {
   Serial.begin(115200); // why does it have to be 115200??? 921600 doesn't work even when same in ini file
 
   // rotary encoder input setup
-  pinMode(INPUT_CLK, INPUT);
-  pinMode(INPUT_DT, INPUT);
-  attachInterrupt(digitalPinToInterrupt(INPUT_CLK), handleRot, CHANGE);
+  pinMode(INPUT_A, INPUT_PULLUP);
+  pinMode(INPUT_B, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(INPUT_A), handleRot, CHANGE);
+  // attachInterrupt(digitalPinToInterrupt(INPUT_B), handleRot, CHANGE);
   
   isConnected = false;
 
@@ -76,12 +77,12 @@ void setup() {
 void loop() {
   // check for change in network connection status
   // @todo change to be blocking
-  if (WiFi.status() == WL_CONNECTED) {
+  if (WiFi.status() == WL_CONNECTED && !isConnected) {
     Serial.println("connnected");
     digitalWrite(LED_BUILTIN, HIGH);
     isConnected = true;
   }
-  else if (WiFi.status() == WL_DISCONNECTED) {
+  else if (WiFi.status() == WL_DISCONNECTED && isConnected) {
     Serial.println("disconnected");
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     isConnected = false;
@@ -89,15 +90,15 @@ void loop() {
     return;
   }
 
-  // // TODO just for testing, remove later
-  // if (rotCounter != prevRotCounter) {
-  // }
+  // TODO just for testing, remove later
+  if (rotCounter != prevRotCounter) {
     Serial.print("Rotary Counter: ");
     Serial.println(rotCounter);
     prevRotCounter = rotCounter;
+  }
 
-  get_currently_playing_track();
-  delay(1000);
+  // get_currently_playing_track();
+  delay(10);
 }
 
 // helper functions
@@ -174,15 +175,25 @@ void get_currently_playing_track() {
 
 // interrupt handler for rotary encoder
 void IRAM_ATTR handleRot() {
-  clkState = digitalRead(INPUT_CLK);
-  dtState = digitalRead(INPUT_DT);
+  static unsigned long lastInterruptTime = 0;
+
+  // debounce
+  unsigned long interruptTime = millis();
+  if (interruptTime - lastInterruptTime < 20) {
+    return;
+  }
+
+  clkState = digitalRead(INPUT_A);
+  dtState = digitalRead(INPUT_B);
 
   if (clkState != dtState) {
     rotCounter++;
-    Serial.println("Rotated right, volume go up"); // TODO change to edit global variables
+    // Serial.println("Rotated right, volume go up"); // TODO change to edit global variables
   }
   else {
     rotCounter--;
-    Serial.println("Rotated left, volume go down");
+    // Serial.println("Rotated left, volume go down");
   }
+
+  lastInterruptTime = interruptTime;
 }
