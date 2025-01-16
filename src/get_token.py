@@ -1,11 +1,10 @@
 import requests
 import webbrowser
-import time
 from urllib.parse import urlencode, urlparse, parse_qs
 
 # Spotify API credentials
-CLIENT_ID = 'a2d2559775754f199203f81403407117'
-CLIENT_SECRET = '39bf4b692ca54b43a37117f8f091630d'
+CLIENT_ID = 'CLIENT_ID'
+CLIENT_SECRET = 'CLIENT_SECRET'
 REDIRECT_URI = 'http://localhost:8888/callback'
 SCOPE = 'user-read-playback-state user-modify-playback-state user-read-currently-playing user-read-private user-read-email'
 
