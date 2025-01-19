@@ -42,8 +42,9 @@ String artistName = "Unavailable";
 String albumName = "Unavailable";
 String albumArtUrl = "";
 String prevAlbumArtUrl = "";
-int currentSongPosition = 0;  // Current position in milliseconds
+int currentSongPosition = 0; // Current position in milliseconds
 int songDuration = 0;        // Total duration in milliseconds
+char timeBuffer[16];         // Buffer for displaying current time
 
 // other global vars
 const int imageScaleSize = 2;
@@ -250,22 +251,83 @@ void updateDisplay() {
     tft.setCursor(10, 200);
     Serial.println(trackName);
     tft.print("Track: ");
-    tft.println(trackName);
+    if (trackName.length() <= 30) {
+      tft.println(trackName);
+    }
+    else {
+      tft.println(trackName.substring(0, 27) + "...");
+    }
 
     tft.setCursor(10, 220);
     Serial.println(artistName);
     tft.print("Artist: ");
-    tft.println(artistName);
+    if (artistName.length() <= 29) { // artist is 1 char longer
+      tft.println(artistName);
+    }
+    else { // truncate long names
+      tft.println(artistName.substring(0, 26) + "...");
+    }
 
     tft.setCursor(10, 240);
     Serial.println(albumName);
     tft.print("Album: ");
-    tft.println(albumName);
+    if (albumName.length() <= 30) {
+      tft.println(albumName);
+    }
+    else {
+      tft.println(albumName.substring(0, 27) + "...");
+    }
 
     prevTrack = trackName;
     prevArtis = artistName;
     prevAlbum = albumName;
   }
+
+  drawProgressBar();
+}
+
+void drawProgressBar() {
+    if (songDuration <= 0) return;  
+
+    // Define progress bar dimensions
+    int barWidth = tft.width() - 20;  
+    int barHeight = 10;
+    int barX = 10;  
+    int barY = tft.height() - barHeight - 20;  
+    int cornerRadius = 4;  
+
+    // draw background bar
+    tft.fillRoundRect(barX, barY, barWidth, barHeight, cornerRadius, TFT_DARKGREY);
+
+    // calculate and draw progress
+    float progress = (float)currentSongPosition / songDuration;
+    int progressWidth = (int)(barWidth * progress);
+    
+    // draw the progress bar
+    if (progressWidth > 0) {
+        tft.fillRoundRect(barX, barY, progressWidth, barHeight, cornerRadius, TFT_GREEN);
+    }
+
+    // draw border around progress bar
+    tft.drawRoundRect(barX, barY, barWidth, barHeight, cornerRadius, TFT_WHITE);
+    
+    int elapsedSeconds = currentSongPosition / 1000;
+    int totalSeconds = songDuration / 1000;
+    
+    
+    tft.fillRect(barX, barY - 15, barWidth, 15, TFT_BLACK);
+    
+    // set text properties before drawing
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);  
+    tft.setTextSize(1);
+    tft.setCursor(barX, barY - 15);
+    
+    // write time into buffer
+    sprintf(timeBuffer, "%02d:%02d / %02d:%02d",
+            (elapsedSeconds / 60) % 60, elapsedSeconds % 60,
+            (totalSeconds / 60) % 60, totalSeconds % 60);
+    
+    tft.print(timeBuffer);
 }
 
 bool refreshAccessToken() {
@@ -345,11 +407,16 @@ void getCurrentlyPlayingTrack() {
       getCurrentlyPlayingTrack();
     }
   }
+  else if (httpResponseCode == HTTP_CODE_NO_CONTENT) {
+    trackName = "No track currently playing";
+    artistName = "";
+    albumName = "";
+    albumArtUrl = "";
+  }
   else {
     Serial.print("Error getting currently playing track: ");
     Serial.println(httpResponseCode);
-    String response = http.getString();
-    Serial.println("Response: " + response);
+    Serial.println("Response: " + http.getString());
   }
 }
 
